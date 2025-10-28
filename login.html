@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Travel Booking Site</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    (function () {
+      emailjs.init("-PE4fGP5wS3MdjznW"); // Your EmailJS public key
+    })();
+  </script>
+  <style>
+    /* Background */
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e")
+        no-repeat center center/cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Container */
+    .container {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 30px 25px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      color: #fff;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: 1.6rem;
+      letter-spacing: 1px;
+    }
+
+    /* Form fields */
+    .form-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      outline: none;
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    input:focus {
+      border: 2px solid #00b894;
+      background: #fff;
+    }
+
+    /* Button */
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      background: linear-gradient(135deg, #00b894, #0984e3);
+      color: #fff;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: linear-gradient(135deg, #019874, #0766b1);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Ticket container */
+    #ticket-container {
+      margin-top: 25px;
+      display: none;
+    }
+
+    .ticket {
+      border: 2px dashed #00b894;
+      padding: 20px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+      text-align: left;
+    }
+
+    .ticket h3 {
+      color: #00b894;
+      margin-top: 0;
+    }
+
+    .home-link {
+      display: inline-block;
+      margin-top: 20px;
+      text-decoration: none;
+      color: #fff;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Book Your Travel ✈️</h2>
+    <form id="travel-form">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" required />
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" required />
+      </div>
+      <div class="form-group">
+        <label for="destination">Destination</label>
+        <input type="text" id="destination" required />
+      </div>
+      <div class="form-group">
+        <label for="departure">Departure Date</label>
+        <input type="date" id="departure" required />
+      </div>
+      <div class="form-group">
+        <label for="return">Return Date</label>
+        <input type="date" id="return" required />
+      </div>
+      <button type="submit">Submit Booking</button>
+    </form>
+    <div id="ticket-container"></div>
+    <a href="index.html" class="home-link">🏠 Back to Home</a>
+  </div>
+
+  <script>
+    function setMinBookingDates() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const dd = String(today.getDate()).padStart(2, "0");
+      const minDate = `${yyyy}-${mm}-${dd}`;
+      document.getElementById("departure").setAttribute("min", minDate);
+      document.getElementById("return").setAttribute("min", minDate);
+    }
+    setMinBookingDates();
+
+    const form = document.getElementById("travel-form");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const destination = document.getElementById("destination").value.trim();
+      const departureDate = document.getElementById("departure").value;
+      const returnDate = document.getElementById("return").value;
+
+      const today = new Date();
+      const depDate = new Date(departureDate);
+      const retDate = new Date(returnDate);
+      today.setHours(0, 0, 0, 0);
+
+      if (depDate < today || retDate < today) {
+        alert("Please select only future dates for booking.");
+        return;
+      }
+      if (retDate < depDate) {
+        alert("Return date cannot be before departure date.");
+        return;
+      }
+
+      const ticketHTML = `
+        <div class="ticket">
+          <h3>🎟 Your Travel Ticket</h3>
+          <p><b>Name:</b> ${name}</p>
+          <p><b>Email:</b> ${email}</p>
+          <p><b>Destination:</b> ${destination}</p>
+          <p><b>Departure:</b> ${departureDate}</p>
+          <p><b>Return:</b> ${returnDate}</p>
+          <hr>
+          <p style="color:#019874;font-weight:bold;">
+            A copy of this ticket has been sent to your email.
+          </p>
+          <p style="font-size:0.9rem;color:#444;">
+            Show this ticket at the time of travel. Safe journey! ✈️
+          </p>
+        </div>
+      `;
+      document.getElementById("ticket-container").innerHTML = ticketHTML;
+      document.getElementById("ticket-container").style.display = "block";
+
+      emailjs
+        .send("service_hwfl2cl", "template_x82bba4", {
+          email: email,
+          user_name: name,
+          destination: destination,
+          departure: departureDate,
+          return: returnDate,
+          to_email: email,
+        })
+        .then(() => console.log("✅ Email sent!"))
+        .catch((error) => console.error("❌ Email failed:", error));
+
+      form.reset();
+      setMinBookingDates();
+    });
+  </script>
+</body>
+</html>

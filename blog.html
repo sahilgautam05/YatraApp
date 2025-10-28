@@ -1,0 +1,63 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blogs By</title>
+    <link rel="stylesheet" href="blog.css" />
+    <link rel="stylesheet" href="style.css" /> 
+</head>
+<body>
+     <!-- HEADER -->
+    <header>
+      <div class="top">
+        <div id="logo">
+          <img src="assets/logo.jpg" alt="logo" width="50" />
+          <h1 class="logo-title"><b>YatraApp</b></h1>
+        </div>
+        <div class="toggle-bar" id="toggle-bar" aria-label="Toggle navigation" tabindex="0">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <nav class="nav-links" id="nav-links">
+          <a href="index.html">Home</a>
+          <a href="about.html">About</a>
+          <a href="package.html">Package</a>
+          <a href="blog.html">Blog</a>
+          <button><a href="login.html">Log in</a></button>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container2">
+        <h1>Blogs By</h1>
+        <div class="blog">
+            <div class="pic">
+                <img src="assets/pic1-blog.jpg" alt="John Smith" />
+                <p>John Smith</p>
+                <p>Founder & CEO</p>
+            </div>
+            <div class="pic">
+                <img src="assets/pic2-blog.jpg" alt="Jane Doe" />
+                <p>Jane Doe</p>
+                <p>Head of Operations</p>
+            </div>
+            <div class="pic">
+                <img src="assets/pic3-blog.jpg" alt="David Lee" />
+                <p>David Lee</p>
+                <p>Marketing Director</p>
+            </div>
+        </div>
+        
+    </div>
+    <script>
+  // Select hamburger toggle and nav menu
+  const toggleBar = document.querySelector('.toggle-bar');
+  const navLinks = document.querySelector('nav.nav-links');
+
+  toggleBar.addEventListener('click', () => {
+    navLinks.classList.toggle('active');
+  });
+</script>
+</body>
+</html>
