@@ -126,7 +126,7 @@
 <body>
   <div class="container">
     <h2>Book Your Travel ✈️</h2>
-    <form id="travel-form">
+    <form id="travel-form" autocomplete="off">
       <div class="form-group">
         <label for="name">Full Name</label>
         <input type="text" id="name" required />
@@ -154,18 +154,68 @@
   </div>
 
   <script>
+    // Helper: format Date -> yyyy-mm-dd
+    function formatDate(date) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Helper: add days safely (handles month/year rollover)
+    function addDays(date, days) {
+      const copy = new Date(date.getTime());
+      copy.setDate(copy.getDate() + days);
+      return copy;
+    }
+
+    const departureInput = document.getElementById("departure");
+    const returnInput = document.getElementById("return");
+    const form = document.getElementById("travel-form");
+    const ticketContainer = document.getElementById("ticket-container");
+
+    // Set default mins: departure >= today, return >= tomorrow (so return is always after departure at minimum)
     function setMinBookingDates() {
       const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      const dd = String(today.getDate()).padStart(2, "0");
-      const minDate = `${yyyy}-${mm}-${dd}`;
-      document.getElementById("departure").setAttribute("min", minDate);
-      document.getElementById("return").setAttribute("min", minDate);
+      today.setHours(0,0,0,0);
+
+      const tomorrow = addDays(today, 1);
+
+      departureInput.setAttribute("min", formatDate(today));
+      // default return min is tomorrow; this ensures return can't be same-day by default
+      returnInput.setAttribute("min", formatDate(tomorrow));
     }
+
+    // Initialize mins on load
     setMinBookingDates();
 
-    const form = document.getElementById("travel-form");
+    // When departure changes, set return min to departure + 1 day
+    departureInput.addEventListener("change", function () {
+      if (!this.value) {
+        // If cleared, reset return min to default (tomorrow)
+        setMinBookingDates();
+        return;
+      }
+
+      const depDate = new Date(this.value);
+      if (isNaN(depDate.getTime())) {
+        // invalid date string
+        setMinBookingDates();
+        return;
+      }
+
+      depDate.setHours(0,0,0,0);
+      const returnMinDate = addDays(depDate, 1); // return must be AFTER departure
+
+      returnInput.setAttribute("min", formatDate(returnMinDate));
+
+      // If existing return value is empty or before/ equal to depDate, set it to returnMinDate (convenience)
+      if (!returnInput.value || new Date(returnInput.value) <= depDate) {
+        returnInput.value = formatDate(returnMinDate);
+      }
+    });
+
+    // Optional: If user clears return date, ensure UI still valid (no extra action required)
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -173,31 +223,51 @@
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
       const destination = document.getElementById("destination").value.trim();
-      const departureDate = document.getElementById("departure").value;
-      const returnDate = document.getElementById("return").value;
+      const departureDate = departureInput.value;
+      const returnDate = returnInput.value;
 
-      const today = new Date();
+      // Basic presence checks
+      if (!name || !email || !destination || !departureDate || !returnDate) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      // Parse dates and normalize
       const depDate = new Date(departureDate);
       const retDate = new Date(returnDate);
-      today.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0,0,0,0);
 
+      if (isNaN(depDate.getTime()) || isNaN(retDate.getTime())) {
+        alert("Please provide valid dates.");
+        return;
+      }
+
+      // Ensure future dates
       if (depDate < today || retDate < today) {
         alert("Please select only future dates for booking.");
         return;
       }
-      if (retDate < depDate) {
-        alert("Return date cannot be before departure date.");
+
+      // Ensure return is AFTER departure (strictly)
+      // Normalize times to midnight to avoid timezone issues
+      depDate.setHours(0,0,0,0);
+      retDate.setHours(0,0,0,0);
+
+      if (retDate <= depDate) {
+        alert("Return date must be after the departure date.");
         return;
       }
 
+      // Build ticket
       const ticketHTML = `
         <div class="ticket">
           <h3>🎟 Your Travel Ticket</h3>
-          <p><b>Name:</b> ${name}</p>
-          <p><b>Email:</b> ${email}</p>
-          <p><b>Destination:</b> ${destination}</p>
-          <p><b>Departure:</b> ${departureDate}</p>
-          <p><b>Return:</b> ${returnDate}</p>
+          <p><b>Name:</b> ${escapeHtml(name)}</p>
+          <p><b>Email:</b> ${escapeHtml(email)}</p>
+          <p><b>Destination:</b> ${escapeHtml(destination)}</p>
+          <p><b>Departure:</b> ${escapeHtml(departureDate)}</p>
+          <p><b>Return:</b> ${escapeHtml(returnDate)}</p>
           <hr>
           <p style="color:#019874;font-weight:bold;">
             A copy of this ticket has been sent to your email.
@@ -207,9 +277,10 @@
           </p>
         </div>
       `;
-      document.getElementById("ticket-container").innerHTML = ticketHTML;
-      document.getElementById("ticket-container").style.display = "block";
+      ticketContainer.innerHTML = ticketHTML;
+      ticketContainer.style.display = "block";
 
+      // Send email (EmailJS) - keep the same payload keys your template expects
       emailjs
         .send("service_hwfl2cl", "template_x82bba4", {
           email: email,
@@ -222,9 +293,20 @@
         .then(() => console.log("✅ Email sent!"))
         .catch((error) => console.error("❌ Email failed:", error));
 
+      // reset form and mins - keep ticket shown
       form.reset();
       setMinBookingDates();
     });
+
+    // small helper to avoid HTML injection in ticket display
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
   </script>
 </body>
 </html>
